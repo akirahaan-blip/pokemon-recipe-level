@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>料理カンスト道｜ポケモンスリープ レシピレベル カンスト計算機</title>
+<meta name="description" content="ポケモンスリープの料理を、あと何回作ればレシピレベルがカンスト（Lv.70）するかを計算します。フィールドボーナス・大成功の確率・日曜のボーナス・イベント倍率もまとめて計算に入ります。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="料理カンスト道">
+<meta property="og:description" content="ポケモンスリープの料理が、あと何回でレシピレベル Lv.70 になるかを計算します。">
+<meta name="twitter:card" content="summary">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#ffeef5; --card:#ffffff; --ink:#4a2434; --sub:#b0788f;
+    --line:#f9d5e3; --key:#e5407e; --key2:#ff8fb5; --hi:#fff2f7;
+  }
+  *{box-sizing:border-box}
+  /* すべて M PLUS 1p の Heavy（900）を使う */
+  body,select,input,button,table{
+    font-family:"M PLUS 1p","Yu Gothic UI","Hiragino Sans","Meiryo",sans-serif;
+    font-weight:900;
+  }
+  body{
+    margin:0; padding:16px 12px 60px;
+    background:var(--bg); color:var(--ink);
+    line-height:1.8; font-size:15px;
+  }
+  .wrap{max-width:760px; margin:0 auto}
+  h1{font-size:20px; margin:0 0 4px; text-align:center}
+  .lead{text-align:center; color:var(--sub); font-size:13px; margin:0 0 18px}
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:16px 16px 18px; margin-bottom:14px;
+    box-shadow:0 1px 3px rgba(200,90,140,.12);
+  }
+  .card h2{
+    font-size:15px; margin:0 0 12px; padding-bottom:8px;
+    border-bottom:2px solid var(--line);
+  }
+  label.f{display:block; margin:0 0 14px}
+  label.f>.t{display:block; font-weight:900; font-size:14px; margin-bottom:2px}
+  label.f>.h{display:block; color:var(--sub); font-size:12px; margin-bottom:6px}
+  select,input[type=number]{
+    width:100%; padding:9px 10px; font-size:15px; font-family:inherit;
+    border:1px solid #f2c2d5; border-radius:8px; background:#fff; color:var(--ink);
+  }
+  select:focus,input:focus{outline:2px solid var(--key); outline-offset:1px}
+  /* 料理のプルダウンは、カテゴリの見出しだけ色を変えて見分けやすくする */
+  optgroup{font-size:14px; padding:4px 0}
+  optgroup[label="カレー"]  {background:#ffe6cc; color:#8a4310}
+  optgroup[label="サラダ"]  {background:#dcf2dc; color:#22662f}
+  optgroup[label="デザート"]{background:#ffdcec; color:#a01e63}
+  optgroup option{background:#fff; color:var(--ink)}
+  .row{display:flex; gap:10px; flex-wrap:wrap}
+  /* せまい画面（スマホ）では、2つ並びをやめて縦に積む */
+  .row>label.f{flex:1 1 210px}
+  label.chk{
+    display:flex; align-items:center; gap:8px; cursor:pointer;
+    background:#fff2f7; border:1px solid var(--line); border-radius:10px;
+    padding:10px 12px; font-weight:900; font-size:14px;
+  }
+  label.chk input{width:18px; height:18px; accent-color:var(--key); cursor:pointer}
+  details{margin-top:6px}
+  summary{
+    cursor:pointer; font-size:13px; color:var(--key); font-weight:900;
+    padding:6px 0; user-select:none;
+  }
+  .note{
+    background:var(--hi); border:1px solid #f7c9dc; border-radius:10px;
+    padding:10px 12px; font-size:12.5px; color:#8f3f63; margin-top:10px;
+  }
+  .big{text-align:center; padding:6px 0 2px}
+  .big .num{
+    font-size:40px; font-weight:900; color:var(--key); line-height:1.2;
+    letter-spacing:-.5px;
+  }
+  .big .pre{font-size:15px; color:var(--sub); margin-right:6px}
+  .big .unit{font-size:17px; font-weight:900; margin-left:2px}
+  .big .cap{font-size:13px; color:var(--sub)}
+  .grid{
+    display:grid; gap:10px; margin-top:14px;
+    grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));
+  }
+  .box{
+    background:#fff2f7; border:1px solid var(--line);
+    border-radius:10px; padding:10px 12px;
+  }
+  .box .k{font-size:12px; color:var(--sub)}
+  .box .v{font-size:19px; font-weight:900}
+  .box .v small{font-size:12px; font-weight:900; color:var(--sub)}
+  .bar{
+    height:16px; background:#fadde8; border-radius:99px; overflow:hidden;
+    margin:14px 0 4px; border:1px solid var(--line);
+  }
+  .bar>i{display:block; height:100%; background:linear-gradient(90deg,#ffa8ca,#e5407e)}
+  .barcap{display:flex; justify-content:space-between; font-size:12px; color:var(--sub)}
+  table{width:100%; border-collapse:collapse; font-size:13px}
+  th,td{padding:5px 6px; border-bottom:1px solid var(--line); text-align:right}
+  th:first-child,td:first-child{text-align:left}
+  th{background:#fff2f7; color:var(--sub); font-weight:900; position:sticky; top:0}
+  .scroll{max-height:340px; overflow:auto; border:1px solid var(--line); border-radius:10px}
+  .muted{color:var(--sub); font-size:12.5px}
+  .done{text-align:center; font-size:20px; font-weight:900; color:var(--key2); padding:16px 0}
+  footer{text-align:center; color:var(--sub); font-size:11.5px; margin-top:18px; line-height:1.9}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>料理カンスト道</h1>
+  <p class="lead">ポケモンスリープ／レシピレベルが Lv.70 になるまで、あと何回？</p>
+
+  <div class="card">
+    <h2>① 料理と、今のレベル</h2>
+
+    <label class="f">
+      <span class="t">料理を選ぶ</span>
+      <span class="h">レベルを上げたい料理です（かっこの中は、その料理の基本エナジー）</span>
+      <select id="recipe"></select>
+    </label>
+
+    <div class="row">
+      <label class="f">
+        <span class="t">今のレシピレベル</span>
+        <span class="h">料理の画面に出ている数字（1〜70）</span>
+        <input type="number" id="lv" min="1" max="70" step="1" value="1">
+      </label>
+
+      <label class="f">
+        <span class="t">次のレベルまで あと</span>
+        <span class="h">料理を作り終わった画面に出る数字。わからなければ空でOK</span>
+        <input type="number" id="remain" min="0" step="1" placeholder="わからなければ空欄">
+      </label>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>② ボーナス</h2>
+
+    <label class="f">
+      <span class="t">フィールドボーナス（％）</span>
+      <span class="h">
+        リサーチフィールドの画面に出ている「エナジーボーナス」の数字です（例: 41）。
+        料理のエナジーがこの分だけ増えます。
+      </span>
+      <input type="number" id="field" min="0" max="200" step="1" value="0">
+    </label>
+
+    <label class="f" style="margin-bottom:4px">
+      <span class="t">ふだん上げている 大成功の確率（％）</span>
+      <span class="h">
+        もともと 10％。<b>料理チャンスS</b> のポケモンをなべ要員に入れると
+        最大 +70％ ＝ <b>80％</b> まで上げられます。日曜はここからさらに +20％ されます。
+      </span>
+      <input type="number" id="crit" min="0" max="80" step="1" value="10">
+    </label>
+    <p class="muted" id="critInfo" style="margin:0 0 14px"></p>
+
+    <label class="chk">
+      <input type="checkbox" id="evOn">
+      <span>イベント中（料理のエナジーが増える）</span>
+    </label>
+
+    <div id="evBox" hidden style="margin-top:10px">
+      <label class="f" style="margin-bottom:0">
+        <span class="t">エナジーが何倍になるか</span>
+        <span class="h">よくあるのは 1.5 倍です</span>
+        <input type="number" id="event" min="1" max="5" step="0.1" value="1.5">
+      </label>
+      <p class="muted" style="margin:6px 0 0">
+        ※このイベントが終わるまでずっと続いた場合の計算になります。
+      </p>
+    </div>
+
+    <label class="f" style="margin-top:14px">
+      <span class="t">1回作ったときの合計エナジー（あれば）</span>
+      <span class="h">
+        料理ができあがった画面に出る数字（<b>大成功じゃないとき</b>のもの）。
+        これを入れると、<b>なべに入れたあまり食材のぶん</b>も計算に入ります。
+        わからなければ空でOKです（そのときはレシピの分だけで計算します＝多めの見積もり）。
+      </span>
+      <input type="number" id="energy" min="0" step="1" placeholder="わからなければ空欄">
+    </label>
+
+    <p class="muted" id="hint"></p>
+
+    <details>
+      <summary>くわしい設定（わからなければ、さわらなくて大丈夫）</summary>
+      <div class="row" style="margin-top:10px">
+        <label class="f" style="margin-bottom:0">
+          <span class="t">1日に作る回数</span>
+          <span class="h">ふつうは3回（朝・昼・晩）</span>
+          <input type="number" id="perday" min="1" max="9" step="1" value="3">
+        </label>
+      </div>
+    </details>
+  </div>
+
+  <div class="card" id="result"></div>
+
+  <div class="card">
+    <h2>レベルごとの内訳</h2>
+    <div class="scroll"><table id="tbl"></table></div>
+    <p class="muted" style="margin:8px 0 0">
+      ※「0 回」は、ひとつ前のレベルで作ったときの経験値があまっていて、
+      作らなくてもそのレベルは上がる、という意味です。
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>この計算について</h2>
+    <ul class="muted" style="padding-left:1.2em; margin:0">
+      <li>レシピレベルは「作った回数」ではなく、<b>その料理で手に入れたエナジーがそのまま経験値</b>になります。
+          カンストは Lv.70 で、Lv.1 からそこまでの合計は 13,355,125 経験値です。</li>
+      <li>レベルが上がるとボーナスが増えて1回のエナジーも増えるので、
+          このツールは1レベルずつ積み上げて計算しています。</li>
+      <li>1回のエナジーは
+          <b>（レシピぶん ＋ あまり食材ぶん）×（1＋フィールドボーナス）× イベント倍率</b>
+          で計算しています。レシピぶんだけにレベルボーナスがかかります。</li>
+      <li>大成功は、<b>平日は2倍・日曜は3倍</b>として、ならした平均を入れています。
+          確率はもともと10％で、<b>料理チャンスS で最大 +70％（＝80％まで）</b>。
+          <b>日曜はさらに +20％</b> されるので、チャンスSを積みきると
+          <b>日曜だけは100％＝かならず大成功</b>になります。
+          持っているポケモンに合わせて、②の確率を変えてください。</li>
+      <li>日曜日は<b>ウィークエンドボーナス</b>でなべの容量が2倍になるので、
+          あまり食材のぶんも2倍で計算しています。</li>
+      <li>「あまり食材ぶん」は、入れてもらった合計エナジーから逆算しています。
+          その日その日で変わるので、だいたいの目安と考えてください。</li>
+    </ul>
+    <div class="note">
+      データ出典：ポケモンスリープ攻略・検証 Wiki*「料理」（Ver.3.7.0 時点／レシピ78品）。
+      レシピレベルの必要経験値表と、レベルボーナスの倍率表を使っています。
+    </div>
+  </div>
+
+  <footer>
+    入れた数字はすべて、このパソコンの中だけで計算しています。<br>
+    文字のデザイン（M PLUS 1p）だけインターネットから読みこんでいます。
+    つながっていないときは、パソコンに入っている文字で表示されます。
+  </footer>
+</div>
+
+<script>
+// =====================================================================
+// データ
+// =====================================================================
+
+// レシピ一覧（n=料理名 / c=カテゴリ / t=食材の数 / e=レシピ基本エナジー）
+const RECIPES = [
+  {n:"とびはねるカレーうどん", c:"カレー", t:112, e:25539},
+  {n:"しんりょくアボカドグラタン", c:"カレー", t:115, e:24802},
+  {n:"いあいぎりすき焼きカレー", c:"カレー", t:101, e:20655},
+  {n:"めざめるパワーシチュー", c:"カレー", t:92, e:19061},
+  {n:"なりきりバケッチャシチュー", c:"カレー", t:69, e:15621},
+  {n:"れんごくコーンキーマカレー", c:"カレー", t:77, e:13690},
+  {n:"ワカクサカレーパン", c:"カレー", t:63, e:10945},
+  {n:"ニンジャカレー", c:"カレー", t:50, e:9445},
+  {n:"ぜったいねむりバターカレー", c:"カレー", t:55, e:9010},
+  {n:"あぶりテールカレー", c:"カレー", t:33, e:7483},
+  {n:"からくちネギもりカレー", c:"カレー", t:32, e:5900},
+  {n:"ピヨピヨパンチ辛口カレー", c:"カレー", t:33, e:5702},
+  {n:"じゅうなんコーンシチュー", c:"カレー", t:30, e:4670},
+  {n:"おやこあいカレー", c:"カレー", t:35, e:4523},
+  {n:"キノコのほうしカレー", c:"カレー", t:23, e:4162},
+  {n:"ビルドアップマメカレー", c:"カレー", t:26, e:3372},
+  {n:"ほっこりホワイトシチュー", c:"カレー", t:22, e:3181},
+  {n:"とけるオムカレー", c:"カレー", t:16, e:2150},
+  {n:"サンパワートマトカレー", c:"カレー", t:15, e:2078},
+  {n:"ひでりカツレツカレー", c:"カレー", t:15, e:1942},
+  {n:"満腹チーズバーグカレー", c:"カレー", t:16, e:1910},
+  {n:"マメバーグカレー", c:"カレー", t:7, e:856},
+  {n:"ベイビィハニーカレー", c:"カレー", t:7, e:839},
+  {n:"たんじゅんホワイトシチュー", c:"カレー", t:7, e:814},
+  {n:"とくせんリンゴカレー", c:"カレー", t:7, e:748},
+  {n:"ごろごろねっとうサラダ", c:"サラダ", t:95, e:25356},
+  {n:"じならしワカモレチップス", c:"サラダ", t:105, e:25162},
+  {n:"まけんきコーヒーサラダ", c:"サラダ", t:100, e:20218},
+  {n:"りんごさんヨーグルトサラダ", c:"サラダ", t:104, e:19293},
+  {n:"はなふぶきミモザサラダ", c:"サラダ", t:69, e:11881},
+  {n:"ニンジャサラダ", c:"サラダ", t:57, e:11659},
+  {n:"ワカクササラダ", c:"サラダ", t:62, e:11393},
+  {n:"クロスチョップドサラダ", c:"サラダ", t:56, e:8755},
+  {n:"ヤドンテールのペッパーサラダ", c:"サラダ", t:35, e:8169},
+  {n:"めいそうスイートサラダ", c:"サラダ", t:49, e:7675},
+  {n:"くだけるアボカドサラダ", c:"サラダ", t:42, e:7125},
+  {n:"キノコのほうしサラダ", c:"サラダ", t:33, e:5859},
+  {n:"オーバーヒートサラダ", c:"サラダ", t:35, e:5225},
+  {n:"くいしんぼうポテトサラダ", c:"サラダ", t:36, e:5040},
+  {n:"ムラっけチョコミートサラダ", c:"サラダ", t:23, e:3665},
+  {n:"うるおいとうふサラダ", c:"サラダ", t:24, e:3113},
+  {n:"ばかぢからワイルドサラダ", c:"サラダ", t:23, e:3046},
+  {n:"モーモーカプレーゼ", c:"サラダ", t:23, e:2942},
+  {n:"めんえきねぎサラダ", c:"サラダ", t:15, e:2845},
+  {n:"みだれづきコーンサラダ", c:"サラダ", t:17, e:2785},
+  {n:"メロメロりんごのチーズサラダ", c:"サラダ", t:23, e:2655},
+  {n:"ねっぷうとうふサラダ", c:"サラダ", t:16, e:2114},
+  {n:"ゆきかきシーザーサラダ", c:"サラダ", t:16, e:1898},
+  {n:"あんみんトマトサラダ", c:"サラダ", t:8, e:1045},
+  {n:"マメハムサラダ", c:"サラダ", t:8, e:978},
+  {n:"とくせんリンゴサラダ", c:"サラダ", t:8, e:855},
+  {n:"みつあつめチョコワッフル", c:"デザート", t:115, e:25484},
+  {n:"ドキドキこわいかおパンケーキ", c:"デザート", t:103, e:24354},
+  {n:"ドオーのエクレア", c:"デザート", t:102, e:20885},
+  {n:"スパークスパイスコーラ", c:"デザート", t:87, e:17494},
+  {n:"フラワーギフトマカロン", c:"デザート", t:77, e:13834},
+  {n:"おちゃかいコーンスコーン", c:"デザート", t:67, e:10925},
+  {n:"グラスミキサースムージー", c:"デザート", t:48, e:8165},
+  {n:"プリンのプリンアラモード", c:"デザート", t:55, e:7594},
+  {n:"かたやぶりコーンティラミス", c:"デザート", t:40, e:7125},
+  {n:"はやおきコーヒーゼリー", c:"デザート", t:42, e:6793},
+  {n:"だいばくはつポップコーン", c:"デザート", t:36, e:6048},
+  {n:"ちからもちソイドーナッツ", c:"デザート", t:35, e:5547},
+  {n:"ネロリのデトックスティー", c:"デザート", t:35, e:5065},
+  {n:"ふくつのジンジャークッキー", c:"デザート", t:35, e:4921},
+  {n:"あくまのキッスフルーツオレ", c:"デザート", t:35, e:4734},
+  {n:"あまいかおりチョコケーキ", c:"デザート", t:24, e:3378},
+  {n:"はなびらのまいチョコタルト", c:"デザート", t:22, e:3314},
+  {n:"はりきりプロテインスムージー", c:"デザート", t:23, e:3263},
+  {n:"おおきいマラサダ", c:"デザート", t:23, e:3015},
+  {n:"かるわざソイケーキ", c:"デザート", t:15, e:1924},
+  {n:"マイペースやさいジュース", c:"デザート", t:16, e:1924},
+  {n:"ひのこのジンジャーティー", c:"デザート", t:16, e:1913},
+  {n:"じゅくせいスイートポテト", c:"デザート", t:14, e:1907},
+  {n:"ねがいごとアップルパイ", c:"デザート", t:16, e:1748},
+  {n:"クラフトサイコソーダ", c:"デザート", t:9, e:1079},
+  {n:"とくせんリンゴジュース", c:"デザート", t:8, e:855},
+  {n:"モーモーホットミルク", c:"デザート", t:7, e:814},
+];
+
+// レシピレベルボーナス（％）。BONUS[1]=0％、BONUS[70]=258％
+const BONUS = [0,
+  0,2,4,6,8,9,11,13,16,18,19,21,23,24,26,28,30,31,33,35,37,40,42,45,47,50,52,55,
+  58,61,64,67,70,74,77,81,84,88,92,96,100,104,108,113,117,122,127,132,137,142,148,
+  153,159,165,171,177,183,190,197,203,209,215,221,227,234,239,243,248,252,258];
+
+// NEED[n] = Lv.(n-1) から Lv.n に上がるのに必要な経験値
+const NEED = [0, 0,
+  1080,1244,1612,1609,1796,2371,3048,3666,4365,4848,5272,5710,6301,6960,7669,
+  8450,9130,9850,10661,11517,12417,13362,14371,15312,16308,17634,19042,20544,
+  22150,23656,24804,26010,27700,29474,31578,33859,35675,37608,40255,42623,45105,
+  47698,50404,52436,55021,58731,62654,66801,71191,75105,122798,151878,201226,
+  258289,300444,347990,398682,435126,478025,542412,621231,718231,833386,992698,
+  1032639,1078591,1121112,1205436,1318244];
+
+const MAXLV = 70;
+
+// CUM[n] = Lv.n になるまでにためた経験値の合計
+const CUM = [0, 0];
+for (let i = 2; i <= MAXLV; i++) CUM[i] = CUM[i - 1] + NEED[i];
+
+// =====================================================================
+// 画面の部品
+// =====================================================================
+const $ = id => document.getElementById(id);
+const sel = $("recipe");
+
+// 料理のプルダウンを、カテゴリごとにまとめて作る
+["カレー", "サラダ", "デザート"].forEach(cat => {
+  const g = document.createElement("optgroup");
+  g.label = cat;
+  RECIPES.forEach((r, i) => {
+    if (r.c !== cat) return;
+    const o = document.createElement("option");
+    o.value = i;
+    o.textContent = r.n + "（" + r.e.toLocaleString() + "）";
+    g.appendChild(o);
+  });
+  sel.appendChild(g);
+});
+
+const fmt = n => Math.round(n).toLocaleString("ja-JP");
+
+// レシピ画面に出るエナジー（なべに何も足していないとき）
+function recipeEnergy(base, lv) {
+  return base + Math.round(base * BONUS[lv] / 100);
+}
+
+// =====================================================================
+// 計算の本体
+// =====================================================================
+function calc() {
+  const r      = RECIPES[+sel.value];
+  const lv0    = Math.min(MAXLV, Math.max(1, Math.floor(+$("lv").value || 1)));
+  const perday = Math.min(9, Math.max(1, Math.floor(+$("perday").value || 3)));
+  const crit   = Math.min(80, Math.max(0, +$("crit").value || 0));
+  const field  = Math.max(0, +$("field").value || 0);
+  const k      = 1 + field / 100;   // フィールドボーナスの倍率
+
+  // イベント中のチェックが入っているときだけ、倍率をかける
+  const evOn  = $("evOn").checked;
+  $("evBox").hidden = !evOn;
+  const evMul = evOn ? Math.max(1, +$("event").value || 1) : 1;
+
+  // 大成功。平日は2倍・10％、日曜は3倍・確率+20％（Wiki*「料理」）
+  const pWd    = crit / 100;
+  const pSun   = Math.min(1, crit / 100 + 0.20);
+
+  $("critInfo").innerHTML =
+    "→ 平日は <b>" + crit + "％</b> で2倍、日曜は <b>" + Math.round(pSun * 100) + "％</b> で3倍"
+    + (pSun >= 1 ? " ＝ <b>日曜はかならず大成功</b>します。" : "。");
+
+  // レシピぶんのエナジー（レベルボーナス込み・フィールドボーナス前）
+  const bare = recipeEnergy(r.e, lv0);
+
+  // 入れてもらった合計エナジーから「あまり食材のぶん」を逆算する
+  const eIn = +$("energy").value;
+  let rest = 0, warn = "";
+  if (eIn > 0) {
+    rest = eIn / (k * evMul) - bare;
+    if (rest < 0) {
+      rest = 0;
+      warn = "入れた合計エナジー（" + fmt(eIn) + "）が、レシピだけのエナジー（"
+           + fmt(bare * k * evMul) + "）より小さいです。料理やレベルを選びまちがえていないか、"
+           + "大成功の数字をそのまま入れていないか確認してください。";
+    }
+  } else {
+    warn = "「1回作ったときの合計エナジー」を入れると、なべのあまり食材のぶんも計算に入り、"
+         + "回数はもっと少なくなります。今はレシピの分だけで計算しています。";
+  }
+
+  // 1回作ったときのエナジー。日曜はウィークエンドボーナスでなべが2倍入る
+  const eng = (lv, sun) => (recipeEnergy(r.e, lv) + (sun ? rest * 2 : rest)) * k * evMul;
+  // もらえる経験値
+  //   mode: "avg"=ならした平均 ／ "best"=出るかぎり大成功 ／ "worst"=出ないかぎり大成功しない
+  //   確率が100％の日（チャンスSを積んだ日曜）は、worst でもかならず大成功する
+  const gain = (lv, sun, mode) => {
+    const p   = sun ? pSun : pWd;      // その日の大成功確率
+    const big = sun ? 3 : 2;           // その日の大成功倍率
+    const m = mode === "best"  ? (p > 0 ? big : 1)
+            : mode === "worst" ? (p >= 1 ? big : 1)
+            : 1 + (big - 1) * p;
+    return eng(lv, sun) * m;
+  };
+
+  $("hint").textContent =
+    "1回のエナジーは " + fmt(eng(lv0, false)) + " です"
+    + "（レシピ " + fmt(r.e) + " ＋ レベルボーナス +" + BONUS[lv0] + "％"
+    + (rest > 0 ? " ＋ あまり食材 " + fmt(rest) : "")
+    + (field ? " ＋ フィールドボーナス +" + field + "％" : "")
+    + (evOn ? " ＋ イベント " + evMul + " 倍" : "") + "）。"
+    + (rest > 0 ? "日曜はなべが2倍入るので " + fmt(eng(lv0, true)) + " になります。" : "");
+
+  const box = $("result");
+  const tbl = $("tbl");
+
+  // すでにカンストしている場合
+  if (lv0 >= MAXLV) {
+    box.innerHTML = '<div class="done">Lv.70 カンスト済みです！</div>'
+      + '<p class="muted" style="text-align:center">' + r.n
+      + ' のボーナスは +258％（エナジーが 3.58 倍）になっています。</p>';
+    tbl.innerHTML = "";
+    return;
+  }
+
+  // 今までにためた経験値
+  // 「次のレベルまであと◯◯」が空なら、レベルが上がったばかりとみなす
+  const remainInput = $("remain").value.trim();
+  let remain = remainInput === "" ? NEED[lv0 + 1] : Math.max(0, Math.floor(+remainInput));
+  if (remain > NEED[lv0 + 1]) remain = NEED[lv0 + 1];
+  const startCum = CUM[lv0 + 1] - remain;
+
+  // -------------------------------------------------------------------
+  // 1回ずつ作っていって、Lv.70 になるまでを数える
+  //   counts[曜日] = その日に作る回数（0=日曜, 1=月曜, … 6=土曜）
+  // -------------------------------------------------------------------
+  const today = new Date().getDay();
+
+  function sim(counts, mode) {
+    let cur = startCum, lv = lv0, n = 0, wd = today;
+    const per = new Array(MAXLV + 1).fill(0);   // レベルごとに作った回数
+    let guard = 0;
+    while (cur < CUM[MAXLV] && guard++ < 200000) {
+      for (let i = 0; i < counts[wd]; i++) {
+        cur += gain(lv, wd === 0, mode);
+        n++; per[lv]++;
+        while (lv < MAXLV && cur >= CUM[lv + 1]) lv++;
+        if (cur >= CUM[MAXLV]) break;
+      }
+      if (cur >= CUM[MAXLV]) break;
+      wd = (wd + 1) % 7;          // 次の曜日へ
+    }
+    return { n: n, per: per };
+  }
+
+  const everyDay = new Array(7).fill(perday);            // 毎日ふつうに作る
+
+  const A = sim(everyDay, "avg");
+  const L = sim(everyDay, "best");    // 運よく毎回大成功したら（いちばん少ない回数）
+  const W = sim(everyDay, "worst");   // 一度も大成功しなかったら（いちばん多い回数）
+
+  const pct = Math.min(100, startCum / CUM[MAXLV] * 100);
+
+  box.innerHTML =
+    '<h2>③ カンスト（Lv.70）まで</h2>'
+    + '<div class="big"><span class="pre">およそ</span><span class="num">' + fmt(A.n) + '</span>'
+    + '<span class="unit">回</span><div class="cap">'
+    + r.n + ' を、平均するとこれくらい作れば Lv.70 です（毎日 ' + perday + ' 回作る場合）<br>'
+    + '大成功はあくまで運なので、<b>' + fmt(L.n) + ' 回 〜 ' + fmt(W.n)
+    + ' 回</b>のあいだにおさまります</div></div>'
+    + '<div class="grid">'
+    +   '<div class="box"><div class="k">1回の経験値（平日）</div><div class="v">'
+    +     fmt(gain(lv0, false, false)) + '</div></div>'
+    +   '<div class="box"><div class="k">1回の経験値（日曜）</div><div class="v">'
+    +     fmt(gain(lv0, true, false)) + '</div></div>'
+    +   '<div class="box"><div class="k">のこりの経験値</div><div class="v">'
+    +     fmt(CUM[MAXLV] - startCum) + '</div></div>'
+    +   '<div class="box"><div class="k">エナジーボーナス</div><div class="v">+'
+    +     BONUS[lv0] + '％ <small>→ +258％</small></div></div>'
+    + '</div>'
+    + '<div class="bar"><i style="width:' + pct.toFixed(2) + '%"></i></div>'
+    + '<div class="barcap"><span>Lv.' + lv0 + '（経験値ぜんたいの '
+    + (Math.floor(pct * 10) / 10).toFixed(1)
+    + '％）</span><span>Lv.70</span></div>'
+    + '<p class="muted" style="margin:10px 0 0">'
+    + '<b>運がよければ</b> ' + fmt(L.n) + ' 回、'
+    + '<b>運が悪ければ</b> ' + fmt(W.n) + ' 回。'
+    + 'ふつうはこの間におさまります。</p>'
+    + (warn ? '<div class="note">' + warn + '</div>' : '');
+
+  // レベルごとの内訳（毎日ふつうに作る場合）
+  let html = '<tr><th>レベル</th><th>1回の経験値（平日）</th><th>必要な回数</th>'
+           + '<th>ここまでの合計</th></tr>';
+  let sum = 0;
+  for (let lv = lv0; lv < MAXLV; lv++) {
+    sum += A.per[lv];
+    html += '<tr><td>Lv.' + lv + ' → ' + (lv + 1) + '</td>'
+          + '<td>' + fmt(gain(lv, false, false)) + '</td>'
+          + '<td>' + fmt(A.per[lv]) + ' 回</td>'
+          + '<td>' + fmt(sum) + ' 回</td></tr>';
+  }
+  tbl.innerHTML = html;
+}
+// どの入力が変わっても、すぐ計算しなおす
+["recipe", "lv", "remain", "field", "evOn", "event", "energy", "perday", "crit"].forEach(id => {
+  $(id).addEventListener("input", calc);
+  $(id).addEventListener("change", calc);
+});
+
+calc();
+</script>
+</body>
+</html>
