@@ -146,7 +146,11 @@
   #stTable{margin-top:8px}
   #stTable tr[data-food]{cursor:pointer}
   #stTable td{font-size:14px}
-  #stTable .dup{font-size:11.5px; color:var(--sub); margin-left:4px}
+  /* 食材名の下の「使う料理」（2品以上なら1行ずつ、料理ごとの数つき） */
+  .by{font-size:11.5px; color:var(--sub); line-height:1.5; white-space:normal}
+  .by>div{display:flex; gap:4px}
+  .by>div::before{content:"└"; flex:none}
+  .by .n{margin-left:auto; padding-left:8px; white-space:nowrap}
   /* 行をおすと「もう集めた」の印（緑）になる */
   #stTable tr.ok td{background:#eaf6e2; color:#5b8a45; text-decoration:line-through}
   #stTable tr.sum td{border-top:2px solid var(--line); border-bottom:none}
@@ -887,21 +891,31 @@ function addStock() {
 }
 
 /** 食材ごとに、必要な数と「いくつの料理で使うか」を数える（foods は多い順）
- *  unit = 1食ぶんの数（最大なら いちばん多い料理の1食ぶん、合計なら 各料理1食ずつの合計） */
+ *  unit = 1食ぶんの数（最大なら いちばん多い料理の1食ぶん、合計なら 各料理1食ずつの合計）
+ *  by   = その食材を使う料理と、料理ごとの数 [{name, a}] */
 function stockNeed() {
   const st = store.stock;
-  const need = {}, used = {}, unit = {};
+  const need = {}, used = {}, unit = {}, by = {};
   const pick = (old, a) => st.mode === "sum" ? (old || 0) + a : Math.max(old || 0, a);
   st.items.forEach(x => {
-    const f = INGR[RECIPES[x.recipe].n] || {};
+    const name = RECIPES[x.recipe].n;
+    const f = INGR[name] || {};
     Object.keys(f).forEach(food => {
       need[food] = pick(need[food], f[food] * x.n);
       unit[food] = pick(unit[food], f[food]);
       used[food] = (used[food] || 0) + 1;
+      (by[food] = by[food] || []).push({ name: name, a: f[food] * x.n });
     });
   });
   const foods = Object.keys(need).sort((a, b) => need[b] - need[a]);
-  return { need: need, used: used, unit: unit, foods: foods };
+  return { need: need, used: used, unit: unit, by: by, foods: foods };
+}
+
+/** 食材名の下に出す「使う料理」の行（withNum=true なら料理ごとの数も出す） */
+function byText(list, withNum) {
+  return '<div class="by">' + list.map(x =>
+    '<div>' + x.name + (withNum ? '<span class="n">' + fmt(x.a) + '</span>' : '') + '</div>'
+  ).join('') + '</div>';
 }
 
 function drawStock() {
@@ -931,13 +945,13 @@ function drawStock() {
     return;
   }
 
-  const { need, used, foods } = stockNeed();
+  const { need, by, foods } = stockNeed();
   let total = 0;
   let t = '<table><tr><th>食材</th><th>必要な数</th></tr>';
   foods.forEach(food => {
     total += need[food];
     t += '<tr data-food="' + food + '"' + (st.done.includes(food) ? ' class="ok"' : '') + '>'
-       + '<td>' + food + (used[food] > 1 ? '<span class="dup">（' + used[food] + '品で使う）</span>' : '') + '</td>'
+       + '<td>' + food + byText(by[food], by[food].length > 1) + '</td>'
        + '<td>' + fmt(need[food]) + '</td></tr>';
   });
   t += '<tr class="sum"><td>合計</td><td>' + fmt(total) + '</td></tr></table>'
@@ -981,11 +995,12 @@ function drawAdj() {
   $("adjCard").hidden = !store.stock.items.length;
   if (!store.stock.items.length) return;
 
-  const { need, unit, foods } = stockNeed();
+  const { need, unit, by, foods } = stockNeed();
   let t = '<table><tr><th>食材</th><th class="c">固定</th><th class="c">個数</th></tr>';
   foods.forEach(food => {
     t += '<tr><td>' + food
-       +   '<div class="per" data-per="' + food + '">' + perText(adjAmount(food, need), unit[food]) + '</div></td>'
+       +   '<div class="per" data-per="' + food + '">' + perText(adjAmount(food, need), unit[food]) + '</div>'
+       +   byText(by[food], false) + '</td>'
        + '<td class="c"><input type="checkbox" data-fix="' + food + '"'
        +   (adj.fixed.includes(food) ? ' checked' : '') + '></td>'
        + '<td class="amt">'
