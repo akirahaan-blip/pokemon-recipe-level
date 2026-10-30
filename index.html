@@ -146,6 +146,16 @@
   #stTable{margin-top:8px}
   #stTable tr[data-food]{cursor:pointer}
   #stTable td{font-size:14px}
+  #stTable th{white-space:nowrap}
+  /* 食材の絵（ドット絵がぼやけないように、くっきり拡大する） */
+  .fn{display:inline-flex; align-items:center; gap:6px}
+  /* 白い絵（エッグ・ミルクなど）が白い背景に消えないよう、うすい色の台紙をしく */
+  .fn img{
+    width:24px; height:24px; image-rendering:pixelated; flex:none;
+    background:#f7e6c4; border-radius:6px; padding:2px; box-sizing:content-box;
+  }
+  /* 絵の幅ぶん、下の行（何食ぶん・使う料理）も右によせて、食材名とそろえる */
+  #stTable .by,#adjTable .by,#adjTable .per{margin-left:34px}
   /* 食材名の下の「使う料理」（2品以上なら1行ずつ、料理ごとの数つき） */
   .by{font-size:11.5px; color:var(--sub); line-height:1.5; white-space:normal}
   .by>div{display:flex; gap:4px}
@@ -545,6 +555,29 @@ const INGR = {
   "みつあつめチョコワッフル": {あまいミツ:38, ワカクサコーン:28, ピュアなオイル:28, リラックスカカオ:21},
 };
 
+// 食材の絵（32×32 のドット絵。備蓄の表で使う）
+const FOOD_IMG = {
+  "あまいミツ": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAA7UlEQVR4AeyVQQ+CMAyFi4m/SC9e+eFcvegv8jD3DJlsWds3pzEkI3kJpe3rRwlwkD8fA2BsYGxgRxu4LkFaRH5fuA1g8GoYjrNYWsvkBZsC/YQDKPtPQaSmso6IOYDLPGVe9xjWlBVxAQew8Zoei1hKpSV0SuQnPEA0tJ79NiexNh+jRxRAuEmAdJs8g1oov1qPTACYQPVW/yp6IavSBLAav5VTATzyFgDLSwVoGdBTOwDGBsYG1A1MZ4m/vJ4X7N1reakAaLcakWfkeZgAzIDeGhfAuwMLgOl1ATAARp8IvZ4oAM+kJ/9zAA/uCQAA//96TEwsAAAABklEQVQDADFEdkHx2H7AAAAAAElFTkSuQmCC",
+  "あんみんトマト": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABY0lEQVR4AeyTO04DQRBE19yGjAAiEm6BuAfH4CLcggQRkJBxnLWfpZJarer5WLbsYBFP3VPTn/JYvluu/LcZ2F5ge4HpF3j8eVsh/3qdlmvcedqAG5KX57PrkTZsYH1+WOH3/f/YSy4Q0OOZHL1H0wBDxNPH/SIYSk7MoGMGXb3kFaUBmmMTQyFqLAM0IpDPUBqohmQTqkMX0hTzh5FOtAaqBj4h0KhlRM7oQO6oZloDbgAaywRn4TTd9eKUgd4wjPRq8v1ZDeThI+cbNfD64s2jg789Sa1fIC4iB1Z8fi2Lcs4CTTiNO+khegMsoYgmIEcDcpBOBO4g3pGjAbnBG6CQpgiaQCdnMVHnmHPndGoCtYFQZFOGi1xQ6bnucLYGdt9/u8PdWf+rmdYAm6sG7mZpzSoNsIRGwXkG9RFbfU0DsZFBEDWXUwPuzmnDBtTM8BaqG43TBkYHj9ZtBi7+Ar2vYg8AAP//HcUskwAAAAZJREFUAwCLFbVBDr4QNAAAAABJRU5ErkJggg==",
+  "めざましコーヒー": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB/0lEQVR4AeyVsVHGMAyFE6ZgGApqJqCBLego6dgCGiagpmAYtgB9ShQUWXaC/9xx3MH5xbakvPcsHDgbfvnn38Cf78CnXKEaJLU9TukAwsPHy/3weHtRQKQ1L3Nz9BpQcoRhv7m6ZFphzmndKhE2vQb0xHA9v74xpdhjottAVMy6QM2WiUMMtLqAiRYOMYAAJmpdIF9Dt4G7p/eCs8dEr4GxUJ8DmYnWPeg1gNyYdYEEaPw6+DQX7DGwFAtxXA+ZCbogtdngff2E564MLQMUf1JYQ6ZgMUxYF7xJuKyGOTOwEqYoA+RG5gViLXXEqAWsPaKB5cS+yK8hBJzQxfU+RCPUAFdXLKOBosAHTLhCunwZGPGAI9tLfPQG9PQSTIeJp8nvIJ1YjBCm7R7EMMMMvAH2BRAGlVPH+tX9QdgXwGP/vi1eNUAxQBjYC5V5JZzVwEU8chUGKAQUAl6qwVrJSUFWBxeAC8Qab4Df30ARiIVxb+IxbntEAVzA4nH2BjTXIiZn0GJ5xJMjCiSlh2FuIRrQG2wicRYi8h4SmgaigNMapkz5hFei8KR/iknUIO+tB6JgS9TemsVtmxpYkjsW4/n1w65Ww+XEOSChkw0oiSPWPQ9iERJHGMhyGvEOTNGfPSHUL8gLzhSak7XNslyPIwwYo4n42XLV+UgDqchW8AsAAP//fNUfnQAAAAZJREFUAwDxKQhQHJa8PwAAAABJRU5ErkJggg==",
+  "とくせんエッグ": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAA1UlEQVR4AeyUXQqDQAyEt2VPUe9/OAv2BAtt5yGwSDOZ1YoIEQZ1TWY+48+9nLwlQE7gWhNorb0VjXxY0gQsVDUeqZcA1OAtdSEA7maLMXqUXgqgGCCIKfKgAMz4X9cSwJ1A9OxGHgHzcgFGAvbUJkBOICeQE3AnUGu97fnB9L3MywXoDY48pgCMvIf6/uuLydaf81ygyIMCmJm370Nfy1IghEJez3o9BPDuACEINK2Ncf6YpvA9CgFgZBAINWGdSQlHvwSAQkDAVBV6FMkAitmvmmjtAwAA//+MhKfCAAAABklEQVQDAOpQhkEPHqpJAAAAAElFTkSuQmCC",
+  "ふといながねぎ": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABhElEQVR4AdyUPU7DQBBGbUSH6CmpOAMUNHQU3ICODu4DDXScAAqoKBASd6CiA2paJLMv0ljj8W7WsWcdKZa+7G/mvV1H2arW/MwqcHB+0tjzzipg4YxdBGIno7hOao+LACAAhL6NzH/cv9R2zUVAFxYYIPqEvuyRMXPERYBCNhoEnDGx+9wEgEhxC9JjvY/9bgIUGxItw/5ZBH4//yodwJLiAoAFRru7v13pW3ATuHg/a46vdmC0EfjX22tN2gXVcRFownN7+LAoKxLAgZLFQvjg9KGp9A9xskBgt//vVgKYDmCi5yYJaLgUFQl9cl6PrNt2lABgYosxrsNzd/TY+cu1Y/ZJVhZIgSkY2B0wc7kMFgBMUgXHwKk1SGAZmCJj4Xw3K1ASnhUoDc8KsCGVKdeuayZfwbLTe8ER6Ql8P103hMVYPOHU7wnsnV7W5Of5hvVOvOEU7wkwKUFCUgIOJyogr4CbYFPJRAUAE0RoZxcQoMCllXnPNnoDnoBcrc0XyN3APwAAAP//Ej9TMwAAAAZJREFUAwAiRq1B0jxOCwAAAABJRU5ErkJggg==",
+  "ワカクサ大豆": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABk0lEQVR4AeyUjU3DMBCF3bAJYoWugITYhgk6AdsgJFboBEiIFZgAgr+LL30k5yRNkZBQUF7ubN/P18Ntk/74bwPYJrBNYJvAb0ygzb9lqrxc/lwC4E3T59uTqbTt98t60qwFaL0p1jvgo7J2ELXl6GTWApwqBB4Qrtv3fUIlDJjiduYcAJJdXfaC9/PXwaIAMiclahQ3paUAlkQR1GdPOHfNIbk8LMpt/DCwNHXpJbPQq5t7s3MvJoBqcTUAGltTqJEW8PUUxFRTrRUB2A3n4jBCDVZfIQCJ9HJ91JTQjwD6wOhTaCMgELAI39UeHxPSePy+eHEmAZgAIpZk5A2w7M8JiBKzy9aV3e6pAkSfftgUOESpKJ79OVUBNNGbRHs0RnpW8e1iD89CAEZNIIVdrCMBh/Ss+XjVpd2FHxuyiAD4PyUgVJJjbgRGY2QB8trtH1hZXRxVBMA5wSPVgIAhKVJpHh3ZXg3ADoNXD+UwfNfdp9lQuYbnZHf8nAugFbzwnNWckX8JwKjYmo0N4P9PYO5efAMAAP//p7x/eAAAAAZJREFUAwBUaLxB/WL5sQAAAABJRU5ErkJggg==",
+  "ほっこりポテト": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABQUlEQVR4AeyUsXHDQAwEaVfhchy7AifuxKE7caIKFKscdSHNBsc5gg89fkSOEmrm5vHA4e70Ad+nF/+OAMcLHC9wvMDQC1xPv7cqqt+3bgA3rIrCq+6lASSA2LNAK9NoBni0kAn1+pnmKkBG7BlU5i3tRYAW4f98mYSKyShnEcCXZfrz9TkBn8VaXM44i/f4J+cAcYApkIDX6nHKVHPdmVUwB6iQWxyMATNOQF3F0wEeGfEaQsbbNQCmvAggCPeIXQNgLEOv1eMsBSC9wNKW6AbAmPRgS2NpzQE+vv/e1PTTjb12jtcEFryf1XOAjDDSx5iQoLq3CJC9QhTDSPCZG3vtnOixCODErMYYcSHjxT7GIPZXASCBSNQdY9WVEy2QcVcBRGTJof7IyX6PnwaIi4iNImq07uUAreUtersH6IW8AwAA//+J0EWUAAAABklEQVQDADK/ukE9s9VdAAAAAElFTkSuQmCC",
+  "あったかジンジャー": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABjklEQVR4AeyVPU5DMRCEH+8GlEgcg54uouY0HIGWE3ADRJ2OnmPQcwOIvkgjjRzv2n4uIkWJNNn1er3zxflblzM/rgDXG7icG/j7ePhHo1+q6RvAFMmYXFIti1MAGDF8/3W/SKxHtBlA5pjtHn8WRA4IEXkP65pCAA6X0gDqyj3WIHy/locAtWZqmPMqJWouQXgty5sAboQ5wzBB5OwTXezV6t6jPARgAKKRgcRS1JH6fJ+6r6M8BGCAxGFMEHkp+qK9srdchwDeqOEYeb2Vr8/fN82eqMEPY4yi3pl6egMO0TIpAbk1PrRSdD4F8EMMRF7LcoC8H5BafwrghxjIAB9KLrG3RSlAOdAhMGZ/93JLOP4XHJPBpy4AmTFbEBgjapHUy370eeoCYBAQEgNdAsEkkvd73gXAASCISIbks2oC8Kpl4hCqKW6FSgG4zqe3z5Nfs/3rr3ynYwqg6YAo5xaQ1orr3fsJqPay2AXAACCQcm4BU4n6FnUDaLggam+NekbiMMDI8J7eywdo3cIBAAD//z/YrY0AAAAGSURBVAMAofLFQUKj4L0AAAAASUVORK5CYII=",
+  "とくせんリンゴ": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABM0lEQVR4AeyVMQrCQBBFJ57BVrDwCDaC9xAbe7E1p/AA9jbiNUSw8QAWFoJt7hDzxZElmUlms4mCRPhMnP3z57FI7NGPPx3Af9zAZjFN6/6Ugm8Ay+PdKRqf5ynLByYIAAsPywGh+ix1vUEAs+3Dzfo8+wAFAWDjZbKPUOsqGACLAZEX+hY1AmBZpHkqAdJhP81LC7P63PlSAAS6Zn5GH1ofr4TK4nOuWp/PUVUADMPQhJAFSVkqQME8SohcFQz1GiKASHvrE7mqt68wJQIUXC02OoDuBrob+NoNRPdE/NuWAeLsrSfJ8j6Q5tBTZkWAaEUiLZUEKfmvtpqXnYoAWZ/UIUCUCcOO1Jy3RwXAOYZZ+O4j61wpgLvQGmj1cbYZgAd4gVbZZ63eANZgq691gCqQJwAAAP//shBgegAAAAZJREFUAwCVVIFBdAokmAAAAABJRU5ErkJggg==",
+  "あじわいキノコ": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAA+ElEQVR4AeyUwQ3CMAxFC0MwBQtwYQz2QByYgitDMAYXFmAKlij6B0tW5Ng/CYEipdJXEsfxf3GrrqcfPwNgdGB04P86cNrvZkbs76WoAzBmC7O5FACKQay55DFnQgCmiBhaY3TeBYgOW4alMRegtFgu37vIVwByYIi7AJf7Y4WknnIBYNwbIgQQCICIztfjJMJ+iygAbfB63ma9Bohel86LAFJzmG22h6bvhAawzAHQKgrAMsfNIQDg28CYk7cfAljmlhFMoHTPiumcEEAny1xuLms9wlBL71nzKgCrUG1s+QBod6ra21rnlt8Bi/qTsdGB7h2IXtcbAAD//xHWuO8AAAAGSURBVAMAKFBgQdt+2K4AAAAASUVORK5CYII=",
+  "つやつやアボカド": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABUUlEQVR4AeyWsUoDQRCGT2trX8HWzlYEe30DsbCw8GlE0Ep8DUF8BC3ThUCaPEG6C19gYFh2b/7N3pEUCfzZvdmZ+b8dQrjTbs+fI8BxAqNN4Or1pfdKf9uzz6c+jfE8CgDGNPOyGMbo4uHjxJ/bvhnAjKxhbi2Zk9sMQJOcvs7W3dDNraYZ4PF+0aXCHIOhm3OOdgZ4X971iCZe19/n28ff29V2jb6qATBFUWP1vApAMebmaHQAxVw19XnSBKYyByQEmNI8BHj+ucz+fVKoSIEPJ6AYteQcLoCN/382b7lgWHu4EwjRhQRletIElEYpj1ojAaTNo2fVnD4ygNrU573d/GXfgjA2FQFyxTRHVuxX4sjHlH0RgOIcBHGMUhH3KtX6HPaDACSojchF5CP2ikIAmtAQsS+Jc1Q6L8UlACvGoCTLqV2rAGqbK/mTA0QQGwAAAP//y+vimQAAAAZJREFUAwBOd5ZButdmLwAAAABJRU5ErkJggg==",
+  "げきからハーブ": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABl0lEQVR4AeyTsUoEMRCG7+4NLCwUbS1tLC0E8REsRfDJBLH0EUSwsLSxtFW0sPANXPmW/Y8YJjuT3B02e/BtJsnM/H+ye4vZP/8mA9MNTDewtht4Pz7rxM3BUQeRf/haDCAcEbNyVjKAMDx8fS97Kz7d3lqujQXNBhDOG9eKU99kwBKnGURPTi40GaAQ0hMT14rTwzTACcegEBBEGJgzAnEU0wDF0UaYIB+IgThK0YAaeEbYRxRUUzMWDdCQ5jXNWnJNAwiD13D3bn928XhYTOM7Km4OG6YBTi/IwwxixELzj/M3LfUjuX0wPDwTpoGhth8w0gcbergG0B27ZvZXIWTg9uQlpKHr1xgpMg3sPd3P02K9Br13jeQQC+bkAjHkvVhLMQ2kCXmMWL7GnI9RwtwAsO5RNOA5RzAFQYGRy9fnudcDc0UDbNIA8lMjzH4KooKadG8sHjVA4c/nVccoFjvXf74PrWusEafGNUBSjiXCGuS53rzKQHp63jeCwhMq7bsGEBVpEz6ydN4auwZaG0frNm7AM/ILAAD//yselFwAAAAGSURBVAMAfkS3QeBO0KQAAAAASUVORK5CYII=",
+  "ワカクサコーン": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABeElEQVR4AeyUMU7EQAxFNwhKKLgGBVTQcxwabsNx6EEUUHANCugAKeRJ68ixxo5ndthqI32NM+P8/8ZaONrs4Rmnx4vpCjDljDqIdzRMj97XdVcAbSz1lD1IXVq7A3Djn89rlnEtHKDuAJgenz5tCAeE90hdAAhCv183cxYjODl7HljRfGCKnQAIRdoTCJGcMQ3do+tmADEXs4/3NykXaxROYwrg7vFq8efFh1bnF5d2K/WeAsAJCERtb8+eyJuEnNs1DSAfCoS827V2EimAh9vXxT+T+5fvObf2xvOH2yIE4LZo21tc5MatICGAJJYg9BToawVJARCQlYBk+7sAeONnSkxPVILaCYAATEu3ljPOI4UA9tcfGemzUrjnFQJoU6/WYdTI6y3trwJ45NYsCo48VgEIigw4bw3n2xQAjS1aA8czDZAxw1CU7U8DYJwxpQfRn1EVAIaeOfuInhpVA2BOkBX7LWoCaAnyvjkAHCbw7xPwfnyy/wcAAP//Sv5J1gAAAAZJREFUAwCUBa9Bqs8OVgAAAABJRU5ErkJggg==",
+  "ピュアなオイル": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAyUlEQVR4AeySTQ6CQAyFi4kG7+PClffwEl7ShUeS6KIwC5JmNu+1A4EmTPLCz7TT7z04ycYrL8Dt81SraJB5E4g6rvvyJvC+v8SqdsY+502AdYjq3Ano96xF/fAQq/KuCA2s910AzACmxkLQAJ6DPbU0gKVe8p4C8Dia4dgeCmA+dI3r/gF0WtL/JKKpVVFq+08AOWjdPxJIkMBwEWkR+EkSJAActG7DBLrrv4sOYXohQHQ420cBFCcRMRAUAHNQtOYAWD0B9GlGAAAA///YX5+BAAAABklEQVQDAHgnaEGJFCPRAAAAAElFTkSuQmCC",
+  "ずっしりカボチャ": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABJ0lEQVR4AeySMQ7CMAxFCws7d+AGDEzMzNyKy7CzMTJwAs4A7CwU/cFS6/qXn6QVEiqSlcT5/n44nVc//k0AxRPYHnY1IvcliwFyG1vdBJA0gfdxXfuwUTbzllNWCtA0tL1iCI3pmyvyUYQAKIzEUe70uFXn1T26auWYZweACVtumYfIuwPAvF+XJ7sK86peBgi7DJAcDWCxWVbKFCQAZsTyKYORAGCIf4R16JABWONSsGIABqbmRwNQvw8ZgBmyPCagPI8EYEZ9zdDQQtVBLwFAaBDYK6HqOwDz/XXGGnhTf7Y6lo+8OwAwiYTIR8GaeS3zDAFQjAIE9iUBDwTzoABWgGIfdudXr8PZa/z5K4AvwBnGUeAuNbIAUpv06SeA/59A3/vj7gMAAP//wbGadAAAAAZJREFUAwBxSIFBOCuo4wAAAABJRU5ErkJggg==",
+  "おいしいシッポ": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAA+0lEQVR4AeyUwQ2DMAxF24pDx+ogHa+HjtFDh+ohUqt3cGRCEofIQIVA+kqwsf/DRFxOG18HwH9O4PN4fVvkcXwmE8C4tfGcZ0s9RwA9DWs1IYQvKpkTjwC1RjxYk1Vbg4gANYPe3DAMZ6ktQSwKIOay5iBWBRAQvR4A+55A7tDp78/ebQItZhimcgOgMRBaxCy5AYTn2/LK5t0Ast2ToP4zSioCXO+3+NuU5BprBFjSjDdHOY8RwBZTGAFA6A1RenO80ASAoBeEZY5XFoBELwSmIvpYKgJQCIQWMS2dY4+xzrfsqwBpA0y00nzP/SyAHgOr5gDY/wSsM/ADAAD//4XxtoMAAAAGSURBVAMAFZxvQcYSizkAAAAASUVORK5CYII=",
+  "モーモーミルク": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAlUlEQVR4AeyVwQqAQAhE3T67zn236WFvQc+liAGFYS+jjc9Dm/1cHaBGYHc3osJZawEKg6m1A2gR8NOMiN4/fVoEMvHb0iHgUXT7sDr1IgKVgfPDtAcFmEO/eDuABoFxmK3IQGkQAIssWzQIkD/gnYdg0SBANln1NAENAiOqeuNoGaRHg0BuQjeqeksEMgRRhph6ei8AAAD//6KzJAEAAAAGSURBVAMA4SxUQTb6G+EAAAAASUVORK5CYII=",
+  "マメミート": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABf0lEQVR4AeyRy0kFQRREn6ZgFMZhHm7NwCDMwK15GIdRGINyFgeK5vbc7lERRKG4v+qqeuP15Zf//gP8yBd4e7z7qFD9t78lwGhWGbGDR018KQCCIAW7fuSfDjAKdcaz+3YAjIGCN/cPtqfqVoA0xk1zK7tdLAeozN9fni8A07MhlgKkOUZAY8zt2TPvoA2Q5gpr6Ex1txviMECaIww0wnSEN3jjbTZPA4zmCGhAn8AQsJPjzC5x+/R6lfM0QJLoFaafQVO5zED+aM6+DFD9esgC0YT7rIbIXdWXASoihtXeHYbAWX7uvGVtAyAA8lE3y01e9fnhtQEgAcT8Vc7sAHMCXu5n5rxZDgAZIE6twA2smqOxFUBhTHiccCcnb0f9VgCENNCQCtgDOOLo08vZDsBDjTDOmR5gDOg7nAqAKCEEs1g1ln86gAJZd815WwbYFYIPENxFGQARBAXzDHBmt5X9NED3GGPQ8br7UgCMRnTCq/elAKtiZ3h/P0D3VT4BAAD//wSAz5wAAAAGSURBVAMAIsXPQWaE4vcAAAAASUVORK5CYII=",
+  "リラックスカカオ": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABjUlEQVR4AeyTPU5CQRSFwdJY6R5srW0sKHULLsDedbgLt6AlhY21resgtMBXHHLezdx5AzwgIY9wMjP37zszhKvJmT+jgfEFLvsF5s8PK1fpD3eyF3i7vSvxJ4MYeH967NxUt/5aXHeg96+zVSewORxkABDwl5vlZlT363C/fTSxlwHAyCGOV7xkzOvY72QAKKIRCADEWSLOPsaJldRswMGCxIGK98H9Z2gyILiAAJDOrK1wal1NBtQAJILJEWeNOcXJZaoa4OaIZoZFgOKspRzxPlUNqBm49r4qXoIr5/WlfZMBGiNEgBinVqrlVJMa8KdXcVwzAOaUm33/TWPf/+d8G0sNeJOGKeYAxUprH5yeqoESiBiNmchHw6r1mytWNaAirQxnnwHIK+e3B4zojUoN+DCaOLMKwN5Fnhxg5LnaPjXAMDUynL3HOCNy6OPnd7oLmF6UGiCJGM6awQEjavZR1UANzm0PActs1QBFfnOgErkhlBoAxA1ZpSGAcUZqIBYe6zwaOPoL9P10awAAAP//KrL1kQAAAAZJREFUAwAdGctBLjMDUAAAAABJRU5ErkJggg==",
+};
+
 // レシピレベルボーナス（％）。BONUS[1]=0％、BONUS[70]=258％
 const BONUS = [0,
   0,2,4,6,8,9,11,13,16,18,19,21,23,24,26,28,30,31,33,35,37,40,42,45,47,50,52,55,
@@ -911,6 +944,13 @@ function stockNeed() {
   return { need: need, used: used, unit: unit, by: by, foods: foods };
 }
 
+/** 食材の絵と名前（絵がない食材は名前だけ） */
+function foodName(food) {
+  return '<span class="fn">'
+    + (FOOD_IMG[food] ? '<img src="' + FOOD_IMG[food] + '" alt="">' : '')
+    + food + '</span>';
+}
+
 /** 食材名の下に出す「使う料理」の行（withNum=true なら料理ごとの数も出す） */
 function byText(list, withNum) {
   return '<div class="by">' + list.map(x =>
@@ -951,7 +991,7 @@ function drawStock() {
   foods.forEach(food => {
     total += need[food];
     t += '<tr data-food="' + food + '"' + (st.done.includes(food) ? ' class="ok"' : '') + '>'
-       + '<td>' + food + byText(by[food], by[food].length > 1) + '</td>'
+       + '<td>' + foodName(food) + byText(by[food], by[food].length > 1) + '</td>'
        + '<td>' + fmt(need[food]) + '</td></tr>';
   });
   t += '<tr class="sum"><td>合計</td><td>' + fmt(total) + '</td></tr></table>'
@@ -998,7 +1038,7 @@ function drawAdj() {
   const { need, unit, by, foods } = stockNeed();
   let t = '<table><tr><th>食材</th><th class="c">固定</th><th class="c">個数</th></tr>';
   foods.forEach(food => {
-    t += '<tr><td>' + food
+    t += '<tr><td>' + foodName(food)
        +   '<div class="per" data-per="' + food + '">' + perText(adjAmount(food, need), unit[food]) + '</div>'
        +   byText(by[food], false) + '</td>'
        + '<td class="c"><input type="checkbox" data-fix="' + food + '"'
